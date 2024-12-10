@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glosses"</title>
+    <style>
+        button{
+            color:rgb(215, 177, 250);
+        }
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding-top: 20px;
+            color:rgb(15, 9, 1);
+        }
+        input, button {
+            margin: 5px;
+            padding: 10px;
+            color:rgb(6, 51, 51);
+        }
+        .product-list {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color:rgb(243, 181, 235)
+        }
+        table, th, td {
+            border: 1px solid #000;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        .message {
+            color: rgb(177, 239, 250);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Gestión de Uñas"</h1>
+
+    <!-- Formulario para agregar o modificar una gorra -->
+    <div>
+        <label for="name">tipo de uñas:</label>
+        <input type="text" id="name" placeholder="Ej. acrilicas, tips, gel">
+        
+        <label for="price">Precio:</label>
+        <input type="number" id="price" placeholder="Ej. 270.00" min="0">
+        
+        <label for="stock">Agenda tu cita:</label>
+        <input type="number" id="stock" placeholder="Ej. 29/12/2024" min="0">
+        
+        <button onclick="addProduct()">Dar de Alta</button>
+        <button onclick="modifyProduct()">Modificar Producto</button>
+        <button onclick="deleteProduct()">Dar de Baja</button>
+        <button onclick="clearFields()">Limpiar Campos</button>
+    </div>
+
+    <hr>
+
+    <!-- Sección para consultar productos -->
+    <div>
+        <button onclick="showProducts()">Consultar Productos</button>
+        <button onclick="generateReport()">Generar Informe</button>
+    </div>
+
+    <div class="product-list">
+        <h3>Lista de Glosses</h3>
+        <table id="product-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Marca</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="product-list-body"></tbody>
+        </table>
+    </div>
+    
+    <p class="message" id="message"></p>
+</div>
+
+<script>
+    // Simulación de base de datos con LocalStorage
+    const STORAGE_KEY = "uñas_db";
+
+    // Función para obtener productos desde el localStorage
+    function getProducts() {
+        const products = localStorage.getItem(STORAGE_KEY);
+        return products ? JSON.parse(products) : [];
+    }
+
+    // Función para guardar productos en el localStorage
+    function saveProducts(products) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+    }
+
+    // Función para agregar un nuevo producto
+    function addProduct() {
+        const name = document.getElementById('name').value;
+        const brand = document.getElementById('brand').value;
+        const price = document.getElementById('price').value;
+        const stock = document.getElementById('stock').value;
+
+        if (!name || !brand || !price || !stock) {
+            showMessage("Todos los campos son obligatorios.", "red");
+            return;
+        }
+
+        const products = getProducts();
+        const newProduct = { name, brand, price: parseFloat(price), stock: parseInt(stock) };
+
+        // Verificar si ya existe el producto
+        if (products.some(product => product.name === name)) {
+            showMessage("Este producto ya está registrado.", "red");
+        } else {
+            products.push(newProduct);
+            saveProducts(products);
+            showMessage("Producto agregado exitosamente.", "green");
+            clearFields();
+            showProducts();
+        }
+    }
+
+    // Función para mostrar los productos en la tabla
+    function showProducts() {
+        const products = getProducts();
+        const tableBody = document.getElementById("product-list-body");
+
+        tableBody.innerHTML = '';
+        products.forEach((product, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${product.name}</td>
+                <td>${product.brand}</td>
+                <td>${product.price}</td>
+                <td>${product.stock}</td>
+                <td>
+                    <button onclick="selectProduct(${index})">Editar</button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Función para seleccionar un producto y cargarlo en los campos para editar
+    function selectProduct(index) {
+        const products = getProducts();
+        const product = products[index];
+
+        document.getElementById('name').value = product.name;
+        document.getElementById('brand').value = product.brand;
+        document.getElementById('price').value = product.price;
+        document.getElementById('stock').value = product.stock;
+
+        // Establecer una propiedad para editar el producto seleccionado
+        document.getElementById('name').dataset.index = index;
+    }
+
+    // Función para modificar un producto
+    function modifyProduct() {
+        const name = document.getElementById('name').value;
+        const brand = document.getElementById('brand').value;
+        const price = document.getElementById('price').value;
+        const stock = document.getElementById('stock').value;
+
+        const index = document.getElementById('name').dataset.index;
+        if (!name || !brand || !price || !stock || index === undefined) {
+            showMessage("Debe seleccionar un producto para modificar.", "red");
+            return;
+        }
+
+        const products = getProducts();
+        products[index] = { name, brand, price: parseFloat(price), stock: parseInt(stock) };
+        saveProducts(products);
+
+        showMessage("Producto modificado exitosamente.", "green");
+        clearFields();
+        showProducts();
+    }
+
+    // Función para dar de baja un producto
+    function deleteProduct() {
+        const name = document.getElementById('name').value;
+        if (!name) {
+            showMessage("Debe seleccionar un producto para eliminar.", "red");
+            return;
+        }
+
+        let products = getProducts();
+        products = products.filter(product => product.name !== name);
+        saveProducts(products);
+
+        showMessage("Producto eliminado exitosamente.", "green");
+        clearFields();
+        showProducts();
+    }
+
+    // Función para generar un informe (simple listado)
+    function generateReport() {
+        const products = getProducts();
+        if (products.length === 0) {
+            showMessage("No hay productos registrados.", "red");
+            return;
+        }
+
+        let report = "Informe de uñas:\n\n";
+        products.forEach(product => {
+            report += `Nombre: ${product.name}\nMarca: ${product.brand}\nPrecio: $${product.price}\nStock: ${product.stock}\n\n`;
+        });
+
+        alert(report);
+    }
+
+    // Función para limpiar los campos del formulario
+    function clearFields() {
+        document.getElementById('name').value = '';
+        document.getElementById('brand').value = '';
+        document.getElementById('price').value = '';
+        document.getElementById('stock').value = '';
+        delete document.getElementById('name').dataset.index; // Limpiar índice de modificación
+    }
+
+    // Función para mostrar mensajes al usuario
+    function showMessage(message, color) {
+        const messageElement = document.getElementById("message");
+        messageElement.textContent = message;
+        messageElement.style.color = color;
+    }
+
+    // Mostrar productos al cargar la página
+    window.onload = showProducts;
+</script>
+
+</body>
+</html
